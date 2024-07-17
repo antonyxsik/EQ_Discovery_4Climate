@@ -13,6 +13,10 @@ import pandas as pd
 import pysr
 from pysr import PySRRegressor
 
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+
 def list_directories_files(path):
     """
     provides all files and directories from the LES simulations (they start with Ug)
@@ -318,7 +322,7 @@ def discover_eqs(path, selected_files, time_avg = 15, indices = np.s_[:, 0:200],
     complexity_of_operators = {"*": 1, "+": 1, "-": 1,
                              "exp": 3, "sin": 3, "cos": 3, 
                              "inv": 3, "square": 3, "cube": 3},
-    complexity_of_constants = 3,
+    # complexity_of_constants = 3,
     # ^ Custom complexity of particular operators and constants
     )
 
@@ -327,4 +331,92 @@ def discover_eqs(path, selected_files, time_avg = 15, indices = np.s_[:, 0:200],
     df_EQ = model.equations_
     
     return df_EQ
+
+
+
+def LES_linear_regressor(path, selected_files, time_avg = 15, indices = np.s_[:, 0:200]):
+
+    """
+    Performs linear regression on all selected files provided 
+    Goes through the whole workflow including data manipulation, model setup, fitting, and evaluation
+
+    Parameters:
+    - path (str): The path to the LES simulation data.
+    - selected_files (list): A list of files containing the LES simulation data.
+    - time_avg (int): The number of time steps over which to average.
+    - indices (np.s_[]): The [timestep, height] indices to slice all variables at
+
+    Returns:
+    - model (sklearn.linear_model): The trained linear regression model
+    - X_train, y_train (pd dataframes): Training data 
+    - X_test, y_test (pd dataframes): Testing data
+    """
+
+    #making variables
+    sigma_th, sigma_2, Theta, wtheta, wwtheta, rdstr, transport = make_variables(path, selected_files, time_avg)
+
+    #getting dimensions
+    dim_df = nc.Dataset(os.path.join(path, selected_files[0]), mode='r')
+    z = dim_df.variables['z'][:]
+    zh = dim_df.variables['zh'][:]
+    t = dim_df.variables['time'][:]
+
+    # necessary gradients
+    dTheta_dz = np.gradient(Theta, z, axis = 1)
+    dwwtheta_dz = np.gradient(wwtheta, zh, axis = 1)
+
+    #reshaping to z dim of 384 for all of them
+    sigma_2 = reshape_variables(sigma_2)
+    wtheta = reshape_variables(wtheta)
+    wwtheta = reshape_variables(wwtheta)
+    dwwtheta_dz = reshape_variables(dwwtheta_dz)
+    rdstr = reshape_variables(rdstr)
+    transport = reshape_variables(transport)
+
+    #making constants
+    wtheta_surface, pbl_height, wstar, theta_star, scaling, ustar, grr, T_0, beta, ug, q = make_constants(path, selected_files, time_avg)
+    tau = pbl_height/wstar
+
+    #computing P value as a residual
+    M = (- sigma_2 * dTheta_dz)
+    T = - dwwtheta_dz
+    B = (beta * sigma_th)
+    P = - M - T - B
+
+    # our target is y (residual (P)
+    y = P[indices].ravel()
+    df_y = pd.DataFrame(y, columns=['P'])
+
+    # all possible variable inputs
+    x0 = wtheta[indices].ravel()
+    x1 = sigma_th[indices].ravel()
+    x4 = (sigma_2[indices] * dTheta_dz[indices]).ravel()
+    df_X_mult = pd.DataFrame(np.column_stack([x0, x1, x4]), 
+                            columns=['wtheta', 'sigma_th', 'Mult'])
+    
+    # Split data into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(df_X_mult, df_y, test_size=0.2, random_state=42)
+
+    # Create and train the model
+    model = LinearRegression()
+    model.fit(X_train, y_train)
+
+    # Predict on the test set
+    y_pred = model.predict(X_test)
+
+    # Evaluate the model
+    rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+    r2 = r2_score(y_test, y_pred)
+
+    print(f"RMSE: {rmse:.7f}")
+    print(f"R-squared: {r2:.7f}")
+
+    coefficients = model.coef_[0]  # Since coef_ returns a 2D array for multi-output, we take the first element
+    intercept = model.intercept_[0]  # Similarly, intercept_ returns a 1D array for multi-output
+
+    for col, coef in zip(df_X_mult.columns, coefficients):
+        print(f"Coefficient for {col}: {coef:.7f}")
+    print(f"Intercept: {intercept:.7f}")
+
+    return model, X_train, X_test, y_train, y_test, rmse, r2, coefficients
     
