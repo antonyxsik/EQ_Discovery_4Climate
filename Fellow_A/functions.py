@@ -214,6 +214,22 @@ def make_constants(path, items, time_avg):
 
 def discover_eqs(path, selected_files, time_avg = 15, indices = np.s_[:, 0:200], difficulty = "medium"):
 
+    """
+    Performs equation discovery on all selected files provided 
+    Goes through the whole workflow including data manipulation, model setup, and fitting
+
+    Parameters:
+    - path (str): The path to the LES simulation data.
+    - selected_files (list): A list of files containing the LES simulation data.
+    - time_avg (int): The number of time steps over which to average.\
+    - indices (np.s_[]): The [timestep, height] indices to slice all variables at
+    - difficulty (string): Decides the variables to be included in the equation discovery  
+
+    Returns:
+    - df_EQ (pandas dataframe): "Hall of fame" dataframe of progressively better fitting equations
+    from the PySR software 
+    """
+
     #making variables
     sigma_th, sigma_2, Theta, wtheta, wwtheta, rdstr, transport = make_variables(path, selected_files, time_avg)
 
