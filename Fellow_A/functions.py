@@ -419,4 +419,38 @@ def LES_linear_regressor(path, selected_files, time_avg = 15, indices = np.s_[:,
     print(f"Intercept: {intercept:.7f}")
 
     return model, X_train, X_test, y_train, y_test, rmse, r2, coefficients
+
+def discover_coef_eqs(predictors, coefficient):
+
+    model = PySRRegressor(
+    niterations = 500,  # increase me for better results
+    maxsize = 10, # allowing for appropriate complexity (x + y has size 3)
+    maxdepth = 3, # avoiding deep nesting
+    progress = False, # makes the printout less hectic in Jupyter
+    binary_operators=["+", "*", "-", "/"],
+    unary_operators=[
+        "cos",
+        "exp",
+        "sin",
+        "inv(x) = 1/x",
+        "square",
+        "cube",
+        # ^ Custom operator (julia syntax)
+    ],
+    extra_sympy_mappings={"inv": lambda x: 1 / x},
+    # ^ Define operator for SymPy as well
+    elementwise_loss="loss(prediction, target) = (prediction - target)^2",
+    # ^ Custom loss function (julia syntax)
+    complexity_of_operators = {"*": 1, "+": 1, "-": 1,
+                             "exp": 3, "sin": 3, "cos": 3, 
+                             "inv": 3, "square": 3, "cube": 3},
+    # complexity_of_constants = 3,
+    # ^ Custom complexity of particular operators and constants
+    )
+
+    model.fit(predictors, coefficient)
+
+    df_EQ = model.equations_
     
+    return df_EQ
+
