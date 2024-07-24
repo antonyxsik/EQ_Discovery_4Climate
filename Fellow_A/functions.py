@@ -286,13 +286,13 @@ def discover_eqs(path, selected_files, time_avg = 15, indices = np.s_[:, 0:200],
     if difficulty == "easy":
         df_X = pd.DataFrame(np.column_stack([x0, x1, x4]), 
                             columns=['wtheta', 'sigma_th', 'Mult'])
-    if difficulty == "medium":
+    elif difficulty == "medium":
         df_X = pd.DataFrame(np.column_stack([x0, x1, x2, x3]), 
                             columns = ['wtheta', 'sigma_th', 'sigma_2', 'dTheta_dz'])
-    if difficulty == "mediumhard":
+    elif difficulty == "mediumhard":
         df_X = pd.DataFrame(np.column_stack([x0, x1, x4, x5, x6, x7, x8]), 
                             columns = ['wtheta', 'sigma_th', 'Mult', 'ug', 'q', 'tau', 'ustar'])
-    if difficulty == "hard":
+    elif difficulty == "hard":
         df_X = pd.DataFrame(np.column_stack([x0, x1, x2, x3, x5, x6, x7, x8]), 
                             columns = ['wtheta', 'sigma_th', 'sigma_2', 'dTheta_dz', 'ug', 'q', 'tau', 'ustar'])
     else:
@@ -309,7 +309,7 @@ def discover_eqs(path, selected_files, time_avg = 15, indices = np.s_[:, 0:200],
     maxsize = 28, # allowing for appropriate complexity (x + y has size 3)
     maxdepth = 4, # avoiding deep nesting
     progress = False, # makes the printout less hectic in Jupyter
-    binary_operators=["+", "*", "-", "/"],
+    binary_operators=["+", "*", "-", "/", "^"],
     # unary_operators=[
     #     "cos",
     #     "exp",
