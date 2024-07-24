@@ -216,7 +216,7 @@ def make_constants(path, items, time_avg):
     return wtheta_surface, pbl_height, wstar, theta_star, scaling, ustar, grr, T_0, beta, ug, q
 
 
-def discover_eqs(path, selected_files, time_avg = 15, indices = np.s_[:, 0:200], difficulty = "medium", normalize = True):
+def discover_eqs(path, selected_files, time_avg = 15, indices = np.s_[:, 0:200], difficulty = "medium", normChoice = "None"):
 
     """
     Performs equation discovery on all selected files provided 
@@ -298,11 +298,19 @@ def discover_eqs(path, selected_files, time_avg = 15, indices = np.s_[:, 0:200],
     else:
         print("Please set difficulty to be one of the following: easy, medium, mediumhard, hard")
 
-    if normalize: 
+    # Normalization options
+    if normChoice == "none": 
+        print("No normalization applied")
+    elif normChoice == "minmax": 
         df_X = (df_X - df_X.min()) / (df_X.max() - df_X.min())
         df_y = (df_y - df_y.min()) / (df_y.max() - df_y.min())
-        print("Don't forget to unnormalize the coef: coef = (coef_norm)(max - min) + min")
-
+        print("Don't forget to unnormalize the coef (minmax)")
+    elif normChoice == "zscore":
+        df_X = (df_X - df_X.mean()) / df_X.std()
+        df_y = (df_y - df_y.mean()) / df_y.std()
+        print("Don't forget to unnormalize the coef (zscore)")
+    else:
+        print("Please set normChoice to be one of the following: none, minmax, zscore")
 
     model = PySRRegressor(
     niterations = 8000,  # increase me for better results
