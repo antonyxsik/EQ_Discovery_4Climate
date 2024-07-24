@@ -216,7 +216,7 @@ def make_constants(path, items, time_avg):
     return wtheta_surface, pbl_height, wstar, theta_star, scaling, ustar, grr, T_0, beta, ug, q
 
 
-def discover_eqs(path, selected_files, time_avg = 15, indices = np.s_[:, 0:200], difficulty = "medium"):
+def discover_eqs(path, selected_files, time_avg = 15, indices = np.s_[:, 0:200], difficulty = "medium", normalize = True):
 
     """
     Performs equation discovery on all selected files provided 
@@ -298,6 +298,12 @@ def discover_eqs(path, selected_files, time_avg = 15, indices = np.s_[:, 0:200],
     else:
         print("Please set difficulty to be one of the following: easy, medium, mediumhard, hard")
 
+    if normalize: 
+        df_X = (df_X - df_X.min()) / (df_X.max() - df_X.min())
+        df_y = (df_y - df_y.min()) / (df_y.max() - df_y.min())
+        print("Don't forget to unnormalize the coef: coef = (coef_norm)(max - min) + min")
+
+
     model = PySRRegressor(
     niterations = 8000,  # increase me for better results
     maxsize = 28, # allowing for appropriate complexity (x + y has size 3)
@@ -334,7 +340,7 @@ def discover_eqs(path, selected_files, time_avg = 15, indices = np.s_[:, 0:200],
 
 
 
-def LES_linear_regressor(path, selected_files, time_avg = 15, indices = np.s_[:, 0:200]):
+def LES_linear_regressor(path, selected_files, time_avg = 15, indices = np.s_[:, 0:200], verbose = True):
 
     """
     Performs linear regression on all selected files provided 
@@ -408,15 +414,18 @@ def LES_linear_regressor(path, selected_files, time_avg = 15, indices = np.s_[:,
     rmse = np.sqrt(mean_squared_error(y_test, y_pred))
     r2 = r2_score(y_test, y_pred)
 
-    print(f"RMSE: {rmse:.7f}")
-    print(f"R-squared: {r2:.7f}")
-
     coefficients = model.coef_[0]  # Since coef_ returns a 2D array for multi-output, we take the first element
     intercept = model.intercept_[0]  # Similarly, intercept_ returns a 1D array for multi-output
 
-    for col, coef in zip(df_X_mult.columns, coefficients):
-        print(f"Coefficient for {col}: {coef:.7f}")
-    print(f"Intercept: {intercept:.7f}")
+
+    if verbose:
+
+        print(f"RMSE: {rmse:.7f}")
+        print(f"R-squared: {r2:.7f}")
+
+        for col, coef in zip(df_X_mult.columns, coefficients):
+            print(f"Coefficient for {col}: {coef:.7f}")
+        print(f"Intercept: {intercept:.7f}")
 
     return model, X_train, X_test, y_train, y_test, rmse, r2, coefficients
 
