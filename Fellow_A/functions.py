@@ -333,7 +333,7 @@ def discover_eqs(path, selected_files, time_avg = 15, indices = np.s_[:, 0:200],
     # ^ Custom loss function (julia syntax)
     batching = True,
     batch_size = 250,
-    complexity_of_operators = {"*": 1, "+": 1, "-": 1,
+    complexity_of_operators = {"*": 1, "+": 1, "-": 1, "^":3,
                              "exp": 3, "sin": 3, "cos": 3, 
                              "inv": 3, "square": 3, "cube": 3},
     # complexity_of_constants = 3,
