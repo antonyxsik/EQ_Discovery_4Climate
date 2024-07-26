@@ -438,10 +438,45 @@ def LES_linear_regressor(path, selected_files, time_avg = 15, indices = np.s_[:,
 
     return model, X_train, X_test, y_train, y_test, rmse, r2, coefficients
 
-def discover_coef_eqs(predictors, coefficient):
+def discover_coef_eqs(df, normChoice = "None", coefficient = "C1"):
+
+
+    df_X = df[['Avg Ustar', 'Avg Tau', 'Ug', 'Q']]
+    #need to rename since Q is already a function in PySR
+    df_X = df_X.rename(columns={'Avg Ustar': 'Ustar', 'Avg Tau': 'Tau', 'Q': 'Q_ic'})
+
+
+    # Coefficient options
+    if coefficient == "C1":
+        df_y = df['C1']
+    elif coefficient == "C2":
+        df_y = df['C2']
+    elif coefficient == "C3":
+        df_y = df['C3']
+    else:
+        print("Please set coefficient to be one of the following: C1, C2, C3")
+
+
+    # Normalization options
+    if normChoice == "none": 
+        print("No normalization applied")
+
+    elif normChoice == "minmax": 
+        df_X = (df_X - df_X.min()) / (df_X.max() - df_X.min())
+        df_y = (df_y - df_y.min()) / (df_y.max() - df_y.min())
+        print("Don't forget to unnormalize the coef (minmax)")
+
+    elif normChoice == "zscore":
+        df_X = (df_X - df_X.mean()) / df_X.std()
+        df_y = (df_y - df_y.mean()) / df_y.std()
+        print("Don't forget to unnormalize the coef (zscore)")
+
+    else:
+        print("Please set normChoice to be one of the following: none, minmax, zscore")
+
 
     model = PySRRegressor(
-    niterations = 500,  # increase me for better results
+    niterations = 100,  # increase me for better results
     maxsize = 10, # allowing for appropriate complexity (x + y has size 3)
     maxdepth = 3, # avoiding deep nesting
     progress = False, # makes the printout less hectic in Jupyter
@@ -459,16 +494,20 @@ def discover_coef_eqs(predictors, coefficient):
     # ^ Define operator for SymPy as well
     elementwise_loss="loss(prediction, target) = (prediction - target)^2",
     # ^ Custom loss function (julia syntax)
-    complexity_of_operators = {"*": 1, "+": 1, "-": 1,
+    complexity_of_operators = {"*": 1, "+": 1, "-": 1, "^":3,
                              "exp": 3, "sin": 3, "cos": 3, 
                              "inv": 3, "square": 3, "cube": 3},
     # complexity_of_constants = 3,
     # ^ Custom complexity of particular operators and constants
     )
 
-    model.fit(predictors, coefficient)
-
+    model.fit(df_X, df_y)
     df_EQ = model.equations_
+
+    plt.scatter(df_y, model.predict(df_X))
+    plt.xlabel('Truth')
+    plt.ylabel('Prediction')
+    plt.show()
     
-    return df_EQ
+    return model, df_EQ
 
