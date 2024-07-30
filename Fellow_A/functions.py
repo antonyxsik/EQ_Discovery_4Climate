@@ -448,11 +448,11 @@ def discover_coef_eqs(df, normChoice = "None", coefficient = "C1"):
 
     # Coefficient options
     if coefficient == "C1":
-        df_y = df['C1']
+        df_y = pd.DataFrame(df['C1'], columns = ['C1'])
     elif coefficient == "C2":
-        df_y = df['C2']
+        df_y = pd.DataFrame(df['C2'], columns = ['C2'])
     elif coefficient == "C3":
-        df_y = df['C3']
+        df_y = pd.DataFrame(df['C3'], columns = ['C3'])
     else:
         print("Please set coefficient to be one of the following: C1, C2, C3")
 
@@ -476,7 +476,7 @@ def discover_coef_eqs(df, normChoice = "None", coefficient = "C1"):
 
 
     model = PySRRegressor(
-    niterations = 100,  # increase me for better results
+    niterations = 1000,  # increase me for better results
     maxsize = 10, # allowing for appropriate complexity (x + y has size 3)
     maxdepth = 3, # avoiding deep nesting
     progress = False, # makes the printout less hectic in Jupyter
@@ -494,9 +494,9 @@ def discover_coef_eqs(df, normChoice = "None", coefficient = "C1"):
     # ^ Define operator for SymPy as well
     elementwise_loss="loss(prediction, target) = (prediction - target)^2",
     # ^ Custom loss function (julia syntax)
-    complexity_of_operators = {"*": 1, "+": 1, "-": 1, "^":3,
-                             "exp": 3, "sin": 3, "cos": 3, 
-                             "inv": 3, "square": 3, "cube": 3},
+    # complexity_of_operators = {"*": 1, "+": 1, "-": 1, "^":3,
+    #                          "exp": 3, "sin": 3, "cos": 3, 
+    #                          "inv": 3, "square": 3, "cube": 3},
     # complexity_of_constants = 3,
     # ^ Custom complexity of particular operators and constants
     )
